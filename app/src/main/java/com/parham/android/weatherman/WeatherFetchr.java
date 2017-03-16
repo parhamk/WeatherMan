@@ -1,7 +1,14 @@
 package com.parham.android.weatherman;
 
+import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
+
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -14,6 +21,8 @@ import java.net.URL;
 
 public class WeatherFetchr {
 
+    private Context context;
+
     private static final String TAG = "WeatherFetchr";
     private static final String API_KEY = "f1beba3653826634";
     private static final String FETCH_RECENTS_METHOD = "flickr.photos.getRecent";
@@ -22,6 +31,10 @@ public class WeatherFetchr {
             .parse("http://api.wunderground.com/api/f1beba3653826634/conditions/q/CA/San_Francisco.json")
             .buildUpon()
             .build();
+
+    public WeatherFetchr(Context context){
+        this.context=context;
+    }
 
     public byte[] getUrlBytes(String urlSpec) throws IOException {
         URL url = new URL(urlSpec);
@@ -54,6 +67,32 @@ public class WeatherFetchr {
         Uri.Builder uriBuilder = ENDPOINT.buildUpon();
         String url = uriBuilder.build().toString();
         String temp = "0";
+
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+
+                        // Result handling
+//                        System.out.println(response.substring(0,100));
+                        Log.i(TAG, "Response " + response.substring(0, 100));
+
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+                // Error handling
+//                System.out.println("Something went wrong!");
+                Log.i(TAG, "Something went wrong!");
+                error.printStackTrace();
+
+            }
+        });
+
+        // Add the request to the queue
+        Volley.newRequestQueue(context).add(stringRequest);
+
         try {
             String jsonString = getUrlString(url);
             Log.i(TAG, "Received JSON: " + jsonString);

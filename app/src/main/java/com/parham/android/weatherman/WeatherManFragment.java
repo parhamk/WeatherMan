@@ -46,7 +46,7 @@ public class WeatherManFragment extends Fragment {
 
         @Override
         protected String doInBackground(Void... params) {
-            String temp = new WeatherFetchr().getCurrentTemperature();
+            String temp = new WeatherFetchr(getActivity()).getCurrentTemperature();
             return temp;
         }
 
