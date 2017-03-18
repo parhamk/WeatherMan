@@ -7,6 +7,7 @@ import android.util.Log;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
@@ -22,6 +23,7 @@ import java.net.URL;
 public class WeatherFetchr {
 
     private Context context;
+    private String mTemp;
 
     private static final String TAG = "WeatherFetchr";
     private static final String API_KEY = "f1beba3653826634";
@@ -32,8 +34,11 @@ public class WeatherFetchr {
             .buildUpon()
             .build();
 
-    public WeatherFetchr(Context context){
-        this.context=context;
+    Uri.Builder uriBuilder = ENDPOINT.buildUpon();
+    String url = uriBuilder.build().toString();
+
+    public WeatherFetchr(Context context) {
+        this.context = context;
     }
 
     public byte[] getUrlBytes(String urlSpec) throws IOException {
@@ -63,39 +68,50 @@ public class WeatherFetchr {
         return new String(getUrlBytes(urlSpec));
     }
 
-    public String getCurrentTemperature() {
-        Uri.Builder uriBuilder = ENDPOINT.buildUpon();
-        String url = uriBuilder.build().toString();
-        String temp = "0";
+    public String getCurrentTempByVolley(final WeatherManFragment.ServerCallback callback) {
 
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
+        JsonObjectRequest jsObjRequest = new JsonObjectRequest
+                (Request.Method.GET, url, (String) null, new Response.Listener<JSONObject>() {
+
                     @Override
-                    public void onResponse(String response) {
-
-                        // Result handling
-//                        System.out.println(response.substring(0,100));
-                        Log.i(TAG, "Response " + response.substring(0, 100));
-
+                    public void onResponse(JSONObject response) {
+                        Log.i(TAG, "Response is " + response.toString());
+                        try {
+                            response = response.getJSONObject("current_observation");
+                            Log.i(TAG, "current_observation is " + response.toString());
+                            try {
+                                mTemp = response.getString("temp_c");
+                                callback.onSuccess(mTemp);
+                                Log.i(TAG, "current temp is " + mTemp);
+                            } catch (JSONException e) {
+                                Log.i(TAG, "Unable to parse temp_c object");
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
 
-                // Error handling
-//                System.out.println("Something went wrong!");
-                Log.i(TAG, "Something went wrong!");
-                error.printStackTrace();
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                    }
+                });
 
-            }
-        });
+        Volley.newRequestQueue(context).add(jsObjRequest);
+        Log.i(TAG, "returning mTemp is " + mTemp);
+        return mTemp;
 
-        // Add the request to the queue
-        Volley.newRequestQueue(context).add(stringRequest);
+    }
+
+    public String getCurrentTemperature() {
+
+        String temp = "0";
+
 
         try {
             String jsonString = getUrlString(url);
-            Log.i(TAG, "Received JSON: " + jsonString);
+//            Log.i(TAG, "Received JSON: " + jsonString);
 
             JSONObject jsonBody = new JSONObject(jsonString);
             JSONObject weatherJsonObject = jsonBody.getJSONObject("current_observation");
@@ -107,7 +123,7 @@ public class WeatherFetchr {
         } catch (JSONException jse) {
             Log.e(TAG, "Failed to parse JSON", jse);
         }
-    return temp;
+        return temp;
     }
 
 //    public List<GalleryItem> fetchRecentPhotos() {

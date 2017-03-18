@@ -26,12 +26,22 @@ public class WeatherManFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        updateItems();
+//        updateItems();
+        mTemp = new WeatherFetchr(getActivity()).getCurrentTempByVolley(new ServerCallback() {
+            @Override
+            public void onSuccess(String result) {
+                mTempTextView.setText(result);
+            }
+        });
         Log.i(TAG, "Background thread started");
     }
 
-    private void updateItems() {
-        new FetchItemsTask().execute();
+    public interface ServerCallback{
+        void onSuccess(String result);
+    }
+
+    public void updateItems(String temp) {
+//        new FetchItemsTask().execute();
     }
 
     @Override
