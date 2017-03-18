@@ -16,6 +16,8 @@ import android.widget.TextView;
 public class WeatherManFragment extends Fragment {
 
     private static final String TAG = "WeatherManFragment";
+    private TextView mCityTextView;
+    private TextView mConditionTextView;
     private TextView mTempTextView;
     private String mTemp;
 
@@ -27,17 +29,19 @@ public class WeatherManFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 //        updateItems();
-        mTemp = new WeatherFetchr(getActivity()).getCurrentTempByVolley(new ServerCallback() {
+        new WeatherFetchr(getActivity()).getCurrentTempByVolley(new ServerCallback() {
             @Override
-            public void onSuccess(String result) {
-                mTempTextView.setText(result);
+            public void onSuccess(String[] result) {
+                mCityTextView.setText(result[0]);
+                mConditionTextView.setText(result[1]);
+                mTempTextView.setText(result[2]);
             }
         });
         Log.i(TAG, "Background thread started");
     }
 
     public interface ServerCallback{
-        void onSuccess(String result);
+        void onSuccess(String[] result);
     }
 
     public void updateItems(String temp) {
@@ -48,7 +52,9 @@ public class WeatherManFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_weather_man, container, false);
-        mTempTextView = (TextView) v.findViewById(R.id.weather_text_view);
+        mCityTextView = (TextView) v.findViewById(R.id.city_name_text_view);
+        mConditionTextView = (TextView) v.findViewById(R.id.condition_text_view);
+        mTempTextView = (TextView) v.findViewById(R.id.temp_text_view);
         return v;
     }
 

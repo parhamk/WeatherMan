@@ -23,14 +23,14 @@ import java.net.URL;
 public class WeatherFetchr {
 
     private Context context;
-    private String mTemp;
+    private String[] mWeather;
 
     private static final String TAG = "WeatherFetchr";
     private static final String API_KEY = "f1beba3653826634";
     private static final String FETCH_RECENTS_METHOD = "flickr.photos.getRecent";
     private static final String SEARCH_METHOD = "flickr.photos.search";
     private static final Uri ENDPOINT = Uri
-            .parse("http://api.wunderground.com/api/f1beba3653826634/conditions/q/CA/San_Francisco.json")
+            .parse("http://api.wunderground.com/api/f1beba3653826634/conditions/lang:FA/q/zmw:00000.1.40754.json")
             .buildUpon()
             .build();
 
@@ -68,7 +68,7 @@ public class WeatherFetchr {
         return new String(getUrlBytes(urlSpec));
     }
 
-    public String getCurrentTempByVolley(final WeatherManFragment.ServerCallback callback) {
+    public String[] getCurrentTempByVolley(final WeatherManFragment.ServerCallback callback) {
 
         JsonObjectRequest jsObjRequest = new JsonObjectRequest
                 (Request.Method.GET, url, (String) null, new Response.Listener<JSONObject>() {
@@ -77,12 +77,17 @@ public class WeatherFetchr {
                     public void onResponse(JSONObject response) {
                         Log.i(TAG, "Response is " + response.toString());
                         try {
-                            response = response.getJSONObject("current_observation");
-                            Log.i(TAG, "current_observation is " + response.toString());
+                            JSONObject location, weather;
+                            location = response.getJSONObject("current_observation").getJSONObject("display_location");
+                            weather = response.getJSONObject("current_observation");
+                            Log.i(TAG, "display_location is " + location.toString());
                             try {
-                                mTemp = response.getString("temp_c");
-                                callback.onSuccess(mTemp);
-                                Log.i(TAG, "current temp is " + mTemp);
+                                mWeather = new String[3];
+                                mWeather[0] = location.getString("full");
+                                mWeather[1] = weather.getString("weather");
+                                mWeather[2] = weather.getString("temp_c");
+                                callback.onSuccess(mWeather);
+                                Log.i(TAG, "current temp is " + mWeather[2]);
                             } catch (JSONException e) {
                                 Log.i(TAG, "Unable to parse temp_c object");
                             }
@@ -99,8 +104,8 @@ public class WeatherFetchr {
                 });
 
         Volley.newRequestQueue(context).add(jsObjRequest);
-        Log.i(TAG, "returning mTemp is " + mTemp);
-        return mTemp;
+//        Log.i(TAG, "returning mTemp is " + mTemp);
+        return mWeather;
 
     }
 
