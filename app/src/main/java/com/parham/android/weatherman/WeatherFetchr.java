@@ -1,6 +1,7 @@
 package com.parham.android.weatherman;
 
 import android.content.Context;
+import android.location.Location;
 import android.net.Uri;
 import android.util.Log;
 
@@ -28,14 +29,18 @@ public class WeatherFetchr {
     private static final String TAG = "WeatherFetchr";
     private static final String API_KEY = "f1beba3653826634";
     private static final String FETCH_RECENTS_METHOD = "flickr.photos.getRecent";
-    private static final String SEARCH_METHOD = "flickr.photos.search";
-    private static final Uri ENDPOINT = Uri
-            .parse("http://api.wunderground.com/api/f1beba3653826634/conditions/lang:FA/q/zmw:00000.1.40754.json")
+    private static final String QUERY_CONDITIONS = "conditions";
+    private static final String QUERY_GEO_LOOKUP = "geolookup";
+    private static final String AUTHORITHY = "api.wunderground.com";
+
+    /*
+         */
+/*       .parse("http://api.wunderground.com/api/f1beba3653826634/conditions/lang:FA/q/zmw:00000.1.40754.json")
             .buildUpon()
             .build();
-
-    Uri.Builder uriBuilder = ENDPOINT.buildUpon();
-    String url = uriBuilder.build().toString();
+*/
+/*    Uri.Builder uriBuilder = ENDPOINT.buildUpon();
+    String url = uriBuilder.build().toString();*/
 
     public WeatherFetchr(Context context) {
         this.context = context;
@@ -68,14 +73,58 @@ public class WeatherFetchr {
         return new String(getUrlBytes(urlSpec));
     }
 
-    public String[] getCurrentTempByVolley(final WeatherManFragment.ServerCallback callback) {
+    public void findCity(Location location,final WeatherManFragment.ServerCallback callback ) {
+        String coordinates = location.getLatitude() + "," + location.getLongitude();
+        String url = buildUrl(QUERY_GEO_LOOKUP, "FA", coordinates);
+        Log.i(TAG, "built url is: " + url);
+        final String[] query = new String[1];
+        JsonObjectRequest jsObjRequest = new JsonObjectRequest
+                (Request.Method.GET, url, (String) null, new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        Log.i(TAG, "findCity() Response is " + response.toString());
+                        try {
+                            JSONObject cityQuery;
+                            cityQuery = response.getJSONObject("location");
+                            Log.i(TAG, "location object is " + cityQuery.toString());
+                            try {
+                                query[0] = cityQuery.getString("l");
+                                Log.i(TAG, "current city query is: " + query[0]);
+                                callback.onSuccess(query[0]);
+                            } catch (JSONException e) {
+                                Log.i(TAG, "Unable to parse location object");
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }, new Response.ErrorListener() {
 
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                        Log.i(TAG, "Unable to fetch url");
+                    }
+                });
+
+        Volley.newRequestQueue(context).add(jsObjRequest);
+//        Log.i(TAG, "returning city query is " + query[0]);
+//        return query[0];
+
+    }
+
+    public String[] getCurrentTemp(String query, final WeatherManFragment.ServerCallback callback) {
+//        Log.i(TAG, "incoming location value is " + location);
+//        String query = findCity(location);
+//        Log.i(TAG, "Found query is: " + query);
+        String url = buildUrl(QUERY_CONDITIONS, "FA", query.replace("/q/",""));
+        Log.i(TAG, "Built url is: " + url);
         JsonObjectRequest jsObjRequest = new JsonObjectRequest
                 (Request.Method.GET, url, (String) null, new Response.Listener<JSONObject>() {
 
                     @Override
                     public void onResponse(JSONObject response) {
-                        Log.i(TAG, "Response is " + response.toString());
+                        Log.i(TAG, "getCurrentTemp() Response is " + response.toString());
                         try {
                             JSONObject location, weather;
                             location = response.getJSONObject("current_observation").getJSONObject("display_location");
@@ -83,7 +132,7 @@ public class WeatherFetchr {
                             Log.i(TAG, "display_location is " + location.toString());
                             try {
                                 mWeather = new String[3];
-                                mWeather[0] = location.getString("full");
+                                mWeather[0] = location.getString("city");
                                 mWeather[1] = weather.getString("weather");
                                 mWeather[2] = weather.getString("temp_c");
                                 callback.onSuccess(mWeather);
@@ -111,9 +160,9 @@ public class WeatherFetchr {
 
     public String getCurrentTemperature() {
 
+        String url = buildUrl(QUERY_CONDITIONS, "FA", "zmw:00000.1.40754");
+
         String temp = "0";
-
-
         try {
             String jsonString = getUrlString(url);
 //            Log.i(TAG, "Received JSON: " + jsonString);
@@ -129,6 +178,20 @@ public class WeatherFetchr {
             Log.e(TAG, "Failed to parse JSON", jse);
         }
         return temp;
+    }
+
+    private String buildUrl(String method, String lang, String query) {
+        Uri.Builder uriBuilder = new Uri.Builder();
+        uriBuilder.scheme("http")
+                .authority(AUTHORITHY)
+                .appendPath("api")
+                .appendPath(API_KEY)
+                .appendPath(method)
+                .appendPath("lang:" + lang)
+                .appendPath("q")
+                .appendPath(query + ".json");
+
+        return uriBuilder.build().toString();
     }
 
 //    public List<GalleryItem> fetchRecentPhotos() {
