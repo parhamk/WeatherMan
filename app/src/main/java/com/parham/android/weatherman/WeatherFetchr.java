@@ -9,7 +9,6 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 import org.json.JSONException;
@@ -46,6 +45,8 @@ public class WeatherFetchr {
         this.context = context;
     }
 
+
+
     public byte[] getUrlBytes(String urlSpec) throws IOException {
         URL url = new URL(urlSpec);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -73,6 +74,11 @@ public class WeatherFetchr {
         return new String(getUrlBytes(urlSpec));
     }
 
+    /**
+     * find name of the city by coordinates
+     * @param location location object containing lat and long
+     * @param callback callback for successful find
+     */
     public void findCity(Location location,final WeatherManFragment.ServerCallback callback ) {
         String coordinates = location.getLatitude() + "," + location.getLongitude();
         String url = buildUrl(QUERY_GEO_LOOKUP, "FA", coordinates);

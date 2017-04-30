@@ -22,6 +22,8 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
+import java.util.List;
+
 
 /**
  * Created by parham on 3/14/2017 AD.
@@ -37,6 +39,7 @@ public class WeatherManFragment extends Fragment implements GoogleApiClient.Conn
     private static final int REQUEST_LOCATION_PERMISSIONS = 0;
     private GoogleApiClient mClient;
 
+    private Weather mWeather;
     private TextView mCityTextView;
     private TextView mConditionTextView;
     private TextView mTempTextView;
@@ -51,6 +54,8 @@ public class WeatherManFragment extends Fragment implements GoogleApiClient.Conn
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 //        updateItems();
+
+        mWeather = new Weather();
         mClient = new GoogleApiClient.Builder(getActivity())
                 .addApi(LocationServices.API)
                 .addConnectionCallbacks(this)
@@ -105,7 +110,8 @@ public class WeatherManFragment extends Fragment implements GoogleApiClient.Conn
         Location lastLocation01 = LocationServices.FusedLocationApi.getLastLocation(
                 mClient);
         if (lastLocation01 != null) {
-            mLocation = lastLocation01;
+
+            mWeather.setLocation(lastLocation01);
             Log.i(TAG, "Got a fix from getLastLocation: " + lastLocation01);
             updateUI();
         }
@@ -122,9 +128,10 @@ public class WeatherManFragment extends Fragment implements GoogleApiClient.Conn
                 });
     }
 
+
     private void updateUI() {
         Log.i(TAG, "updateUI is executed");
-        new WeatherFetchr(getActivity()).findCity(mLocation, new ServerCallback() {
+        new WeatherFetchr(getActivity()).findCity(mWeather.getLocation(), new ServerCallback() {
             @Override
             public void onSuccess(String result) {
                 new WeatherFetchr(getActivity()).getCurrentTemp(result, new ServerCallback() {
@@ -142,7 +149,7 @@ public class WeatherManFragment extends Fragment implements GoogleApiClient.Conn
                     }
                 });
 
-                }
+            }
 
             @Override
             public void onSuccess(String[] result) {
@@ -150,28 +157,28 @@ public class WeatherManFragment extends Fragment implements GoogleApiClient.Conn
             }
         });
 
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        if (mClient.isConnected()) {
+            Log.i(TAG, "Google_Api_Client: It was connected on (onConnected) function, working as it should.");
+            setLocation();
+        } else {
+            Log.i(TAG, "Google_Api_Client: It was NOT connected on (onConnected) function, It is defiantly bugged.");
         }
 
-        @Override
-        public void onConnected (Bundle bundle){
-            if (mClient.isConnected()) {
-                Log.i(TAG, "Google_Api_Client: It was connected on (onConnected) function, working as it should.");
-                setLocation();
-            } else {
-                Log.i(TAG, "Google_Api_Client: It was NOT connected on (onConnected) function, It is defiantly bugged.");
-            }
+    }
 
-        }
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.i(TAG, "Suspended");
+    }
 
-        @Override
-        public void onConnectionSuspended ( int i){
-            Log.i(TAG, "Suspended");
-        }
-
-        @Override
-        public void onConnectionFailed (@NonNull ConnectionResult connectionResult){
-            Log.i(TAG, "Failed");
-        }
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        Log.i(TAG, "Failed");
+    }
 
     private boolean hasLocationPermission() {
         int result = ContextCompat.checkSelfPermission(getActivity(), LOCATION_PERMISSIONS[0]);
@@ -192,6 +199,12 @@ public class WeatherManFragment extends Fragment implements GoogleApiClient.Conn
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_weather_man, container, false);
+
+        WeatherLab weatherLab = WeatherLab.get(getActivity());
+        List<Weather> weathers = weatherLab.getWeathers();
+
+
+
         mCityTextView = (TextView) v.findViewById(R.id.city_name_text_view);
         mConditionTextView = (TextView) v.findViewById(R.id.condition_text_view);
         mTempTextView = (TextView) v.findViewById(R.id.temp_text_view);
